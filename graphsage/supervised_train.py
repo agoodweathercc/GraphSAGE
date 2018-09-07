@@ -329,8 +329,65 @@ def train(train_data, test_data=None):
         fp.write("loss={:.5f} f1_micro={:.5f} f1_macro={:.5f}".
                 format(val_cost, val_f1_mic, val_f1_mac))
 
+def get_data():
+    print("Loading training data..")
+    FLAGS.train_prefix = './example_data/ppi'
+    train_data = load_data(FLAGS.train_prefix)
+    return train_data
+
+def make_direct(direct):
+    # has side effect
+    import os
+    if not os.path.exists(direct):
+            os.makedirs(direct)
+
+def dump_data(dataset, dataname, GRAPH_TYPE='ppi', beta = -1, still_dump='yes', skip='no'):
+    if skip == 'yes':
+        return
+    # save dataset in a directory for future use
+    import pickle, os
+    directory = '/home/cai.507/Documents/DeepLearning/deep-persistence/' + GRAPH_TYPE + '/LearningFiltration/'
+    if (str(type(beta)) == "<type 'numpy.ndarray'>") and (len(beta) == 5):
+        print('Saving in beta subdirectory...')
+        directory = '/home/cai.507/Documents/DeepLearning/deep-persistence/' + GRAPH_TYPE + '/LearningFiltration/'
+        make_direct(directory)
+
+    outputFile = directory + dataname
+    if os.path.exists(outputFile):
+        if still_dump == 'no':
+            print('File already exists. No need to dump again.')
+            return
+    print('Dumping...')
+    fw = open(outputFile, 'wb')
+    pickle.dump(dataset, fw)
+    fw.close()
+    print('Finish Saving data %s for future use' % dataname)
+
+dump_data(train_data[4], 'ppi_data')
+import pickle
+
+a = train_data[4]
+
+with open('filename.pickle', 'wb') as handle:
+    pickle.dump(a, handle, protocol=2)
+
+with open('filename.pickle', 'rb') as handle:
+    b = pickle.load(handle)
+
+print (a == b)
+
+
+import json
+json.dumps(train_data[0])
+import networkx as nx
+from networkx.readwrite import json_graph
+jgraph = json_graph.node_link_data(train_data[0])
+js = json.dumps(jgraph)
+print (type(js))
+
 def main(argv=None):
     print("Loading training data..")
+    FLAGS.train_prefix = './example_data/ppi'
     train_data = load_data(FLAGS.train_prefix)
     print("Done loading training data..")
     train(train_data)
