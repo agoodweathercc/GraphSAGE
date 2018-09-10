@@ -2,6 +2,8 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+sys.path.append('/home/cai.507/Documents/DeepLearning/GraphSAGE')
 import time
 import tensorflow as tf
 import numpy as np
@@ -363,32 +365,66 @@ def dump_data(dataset, dataname, GRAPH_TYPE='ppi', beta = -1, still_dump='yes', 
     fw.close()
     print('Finish Saving data %s for future use' % dataname)
 
-dump_data(train_data[4], 'ppi_data')
-import pickle
+def test_dictio(data, direct, name):
+    import pickle
+    assert type(data)==dict
+    a = data
+    make_direct(direct)
+    with open(direct + name, 'wb') as handle:
+        pickle.dump(a, handle, protocol=2)
+    with open(direct + name, 'rb') as handle:
+        b = pickle.load(handle)
+    assert (a == b)
 
-a = train_data[4]
-
-with open('filename.pickle', 'wb') as handle:
-    pickle.dump(a, handle, protocol=2)
-
-with open('filename.pickle', 'rb') as handle:
-    b = pickle.load(handle)
-
-print (a == b)
+def read_dict(direct, name):
+    import pickle
+    with open(direct + name, 'rb') as handle:
+        b = pickle.load(handle)
+    assert type(b) == dict
+    return b
 
 
-import json
-json.dumps(train_data[0])
-import networkx as nx
-from networkx.readwrite import json_graph
-jgraph = json_graph.node_link_data(train_data[0])
-js = json.dumps(jgraph)
-print (type(js))
+def test(n):
+    n = 200
+    import networkx as nx
+    from networkx.readwrite import json_graph
+    G = train_data[0]; G_ = {};
+    threshold = 2
+    for v in G.nodes()[0:n]:
+        if v % 100 == 0:
+            print(v)
+        dist_dict = nx.shortest_path_length(G, source=v)
+        nodelist = [key for key, val in dist_dict.items() if val <= threshold]
+        G_[v] = {}
+        G_[v]['graphs'] = json_graph.node_link_data(G.subgraph(nodelist)) # nx to dict
+        # assert len(G_[v]['graphs']) == len(nodelist)
+        G_[v]['labels'] = G.node[v]['label']
+        G_[v]['feature'] = G.node[v]['feature']
+        G_[v]['val'] = G.node[v]['val']
+        G_[v]['test'] = G.node[v]['test']
+    test_dictio(G_, '/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/', 'ppi_io')
+    return G_
+
+def read_ppi_io():
+    from networkx.readwrite import json_graph
+    G_ = read_dict('/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/', 'ppi_io')
+    for i in range(5):
+        dic = G[]
+        json_graph.node_link_graph(dic)
 
 def main(argv=None):
     print("Loading training data..")
-    FLAGS.train_prefix = './example_data/ppi'
+    FLAGS.train_prefix = '/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/ppi'
     train_data = load_data(FLAGS.train_prefix)
+    print ('The length of train_data is %s'%len(train_data))
+    for i in range(len(train_data)):
+        print(i, type(train_data[i]))
+    print('The first one is a networkx graph'); print('Num of nodes is', len(train_data[0].nodes()), 'Num of edges is', len(train_data[0].edges()))
+    print('The second one is numpy.array'); print('The shape is of', np.shape(train_data[1]))
+    print('The thrid one is a dict'); print('The length of the dict is %s'%len(train_data[2])); print('The keys are %s'%train_data[2].keys())
+    print('The fourth one is a list'); print('The length is %s'%len(train_data[3])); print('It is empty')
+    print('The fifth one is a dict'); print('The length of the dict is %s' % len(train_data[4])); print('The keys are %s' % train_data[4].keys())
+
     print("Done loading training data..")
     train(train_data)
 
