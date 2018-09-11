@@ -382,21 +382,52 @@ def read_dict(direct, name):
         b = pickle.load(handle)
     assert type(b) == dict
     return b
+def deg_historgram(G):
+    import collections
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    # G = nx.gnp_random_graph(100, 0.02)
+
+    degree_sequence = sorted([val for val in G.degree().values()], reverse=True)  # degree sequence
+    # print "Degree sequence", degree_sequence
+    degreeCount = collections.Counter(degree_sequence)
+    deg, cnt = zip(*degreeCount.items())
+
+    fig, ax = plt.subplots()
+    plt.bar(deg, cnt, width=0.80, color='b')
+
+    plt.title("Degree Histogram")
+    plt.ylabel("Count")
+    plt.xlabel("Degree")
+    ax.set_xticks([d + 0.4 for d in deg])
+    ax.set_xticklabels(deg)
+
+    plt.show()
 
 
-def test(n):
+def test(n=200):
     n = 200
     import networkx as nx
     from networkx.readwrite import json_graph
+    print("Loading training data..")
+    FLAGS.train_prefix = '/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/ppi'
+    train_data = load_data(FLAGS.train_prefix)
     G = train_data[0]; G_ = {};
-    threshold = 2
-    for v in G.nodes()[0:n]:
+
+    threshold = 3
+    for v in G.nodes()[0:n:100]:
         if v % 100 == 0:
             print(v)
         dist_dict = nx.shortest_path_length(G, source=v)
         nodelist = [key for key, val in dist_dict.items() if val <= threshold]
         G_[v] = {}
+        Gi = G.subgraph(nodelist)
+        print(len(Gi), 'Nodes', len(Gi.edges()), 'Edges')
+        continue
+
         G_[v]['graphs'] = json_graph.node_link_data(G.subgraph(nodelist)) # nx to dict
+
         # assert len(G_[v]['graphs']) == len(nodelist)
         G_[v]['labels'] = G.node[v]['label']
         G_[v]['feature'] = G.node[v]['feature']
@@ -405,12 +436,32 @@ def test(n):
     test_dictio(G_, '/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/', 'ppi_io')
     return G_
 
-def read_ppi_io():
+def read_ppi_io(G_):
     from networkx.readwrite import json_graph
-    G_ = read_dict('/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/', 'ppi_io')
-    for i in range(5):
-        dic = G[]
-        json_graph.node_link_graph(dic)
+    # G_ = read_dict('/home/cai.507/Documents/DeepLearning/GraphSAGE/example_data/', 'ppi_io')
+    graphs = {}; labels = {}
+    for i in range(200):
+        dic = G_[i]['graphs']
+        graphs[i] = json_graph.node_link_graph(dic)
+        print(len(graphs[i]), 'Nodes', len(graphs[i].edges()), 'Edges')
+
+def timetest():
+    import sys
+    from __future__ import print_function
+    sys.path.append('/home/cai.507/Documents/DeepLearning/deep-persistence/pythoncode')
+    sys.path.append('/home/cai.507/Documents/DeepLearning/deep-persistence/')
+    from GraphRicciCurvature.OllivierRicci import ricciCurvature
+    loops = [e for e in Gi.edges() if e[0]==e[1]]
+    Gi.remove_edges_from(loops)
+
+
+    %time g_ricci = ricciCurvature(Gi, alpha=0.5, weight='weight')
+
+
+    from cycle_basis_v2 import function_basis
+    function_basis(Gi, )
+
+
 
 def main(argv=None):
     print("Loading training data..")
